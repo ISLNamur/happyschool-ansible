@@ -1,0 +1,72 @@
+happyschool_home: "/home/{{ ansible_user }}/happyschool"
+apps:
+  infirmerie: true
+
+postgresql_databases:
+  - name: "{{ db_name }}"
+postgresql_users:
+  - name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    encrypted: true
+postgresql_python_library: python3-psycopg2
+postgres_users_no_log: false
+
+nginx_start: true
+nginx_http_template_enable: true
+nginx_http_template:
+  default:
+    template_file: http/default.conf.j2
+    conf_file_name: happyschool.conf
+    conf_file_location: /etc/nginx/conf.d/
+    servers:
+      main:
+        listen:
+          listen_localhost:
+            port: 80
+            opts:
+              - default_server
+        server_name: localhost
+        client_max_body_size: 20m
+        web_server:
+          http_demo_conf: false
+          locations:
+            static:
+              location: /static/
+              html_file_location: "{{ happyschool_home }}"
+              add_headers:
+                service_workr_allowed:
+                  name: Service-Worker-Allowed
+                  value: "/"
+            media:
+              location: /media/
+              html_file_location: "{{ happyschool_home }}"
+            favicon:
+              location: /favicon.ico
+              html_file_location: "{{ happyschool_home }}/static/"
+        reverse_proxy:
+          locations:
+            backend:
+              location: /
+              proxy_pass: http://0.0.0.0:8080
+
+supervisor_log_dir: /var/log/happyschool
+supervisor_unix_http_server_password_protect: false
+supervisor_programs:
+  - name: "daphne"
+    command: "/home/{{ ansible_user }}/.local/bin/pipenv run daphne -b 0.0.0.0 -p 8080 happyschool.asgi:application"
+    state: present
+    configuration: |
+      directory={{ happyschool_home }}
+      autostart=true
+      autorestart=true
+      environment=HOME="/home/{{ ansible_user }}",USER="{{ ansible_user }}"
+    
+  - name: "celery"
+    command: "/home/{{ ansible_user }}/.local/bin/pipenv run celery -A happyschool worker -l info"
+    state: present
+    configuration: |
+      directory={{ happyschool_home }}
+      autostart=true
+      autorestart=true
+      environment=HOME="/home/{{ ansible_user }}",USER="{{ ansible_user }}"
+    

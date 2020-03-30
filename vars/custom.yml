@@ -1,0 +1,14 @@
+
+happyschool_admin: admin
+happyschool_password: happyschool
+db_name: happyschool
+db_user: happyschool
+db_password: happyschool
+
+# Apps
+infirmerie: false
+appels: false
+absence_prof: false
+dossier_eleve: true
+schedule_change: false
+student_absence: false
