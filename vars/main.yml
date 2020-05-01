@@ -12,6 +12,7 @@ postgresql_python_library: python3-psycopg2
 postgres_users_no_log: false
 
 nginx_start: true
+nginx_install_from: nginx_repository
 nginx_http_template_enable: true
 nginx_http_template:
   default:
