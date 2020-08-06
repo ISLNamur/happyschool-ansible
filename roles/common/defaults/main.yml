@@ -9,6 +9,7 @@ db_password: happyschool
 infirmerie: false
 appels: false
 absence_prof: false
-dossier_eleve: true
+dossier_eleve: false
 schedule_change: false
 student_absence: false
+grandset: false

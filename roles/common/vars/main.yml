@@ -49,6 +49,13 @@ nginx_http_template:
             backend:
               location: /
               proxy_pass: http://0.0.0.0:8080
+              proxy_set_header:
+                header_upgrade:
+                  name: Upgrade
+                  value: $http_upgrade
+                header_connection:
+                  name: Connection
+                  value: "Upgrade"
 
 supervisor_log_dir: /var/log/happyschool
 supervisor_unix_http_server_password_protect: false
@@ -61,6 +68,8 @@ supervisor_programs:
       autostart=true
       autorestart=true
       environment=HOME="/home/{{ ansible_user }}",USER="{{ ansible_user }}"
+      user={{ ansible_user }}
+      stdout_logfile_maxbytes=10MB
     
   - name: "celery"
     command: "/home/{{ ansible_user }}/.local/bin/pipenv run celery -A happyschool worker -l info"
@@ -70,4 +79,6 @@ supervisor_programs:
       autostart=true
       autorestart=true
       environment=HOME="/home/{{ ansible_user }}",USER="{{ ansible_user }}"
+      user={{ ansible_user }}
+      stdout_logfile_maxbytes=10MB
     
