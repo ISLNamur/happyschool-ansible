@@ -1,3 +1,4 @@
 - geerlingguy.postgresql
 - nginxinc.nginx
 - geerlingguy.supervisor 
+- geerlingguy.certbot

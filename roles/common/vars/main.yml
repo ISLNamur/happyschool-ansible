@@ -1,6 +1,4 @@
 happyschool_home: "/home/{{ ansible_user }}/happyschool"
-apps:
-  infirmerie: true
 
 postgresql_databases:
   - name: "{{ db_name }}"
@@ -11,6 +9,75 @@ postgresql_users:
 postgresql_python_library: python3-psycopg2
 postgres_users_no_log: false
 
+certbot_create_if_missing: true
+
+nginx_web_server:
+  http_demo_conf: false
+  locations:
+    static:
+      location: /static/
+      html_file_location: "{{ happyschool_home }}"
+      add_headers:
+        service_workr_allowed:
+          name: Service-Worker-Allowed
+          value: "/"
+    media:
+      location: /media/
+      html_file_location: "{{ happyschool_home }}"
+    favicon:
+      location: /favicon.ico
+      html_file_location: "{{ happyschool_home }}/static/"
+
+nginx_reverse_proxy:
+  locations:
+    backend:
+      location: /
+      proxy_pass: http://0.0.0.0:8080
+      proxy_set_header:
+        header_upgrade:
+          name: Upgrade
+          value: $http_upgrade
+        header_connection:
+          name: Connection
+          value: "Upgrade"
+
+nginx_template_http:
+  main:
+    listen:
+      listen_http:
+        port: 80
+        opts:
+          - default_server
+    server_name: localhost
+    client_max_body_size: 20m
+    web_server: "{{ nginx_web_server }}"
+    reverse_proxy: "{{ nginx_reverse_proxy }}"
+
+nginx_template_https:
+  redirect:
+    listen:
+      listen_http:
+        port: 80
+    server_name: "{{ happyschool_domain }}"
+    https_redirect: $server_name
+  main:
+    listen:
+      listen_https:
+        port: 443
+        ssl: true
+        opts:
+          - default_server
+          - http2
+          - ssl
+    ssl:
+      cert: "/etc/letsencrypt/live/{{ happyschool_domain }}/fullchain.pem"
+      key: "/etc/letsencrypt/live/{{ happyschool_domain }}/privkey.pem"
+      dhparam: /etc/ssl/dhparams.pem
+    server_name: "{{ happyschool_domain if use_https else 'localhost' }}"
+    client_max_body_size: 20m
+    web_server: "{{ nginx_web_server }}"
+    reverse_proxy: "{{ nginx_reverse_proxy }}"
+
 nginx_start: true
 nginx_install_from: nginx_repository
 nginx_http_template_enable: true
@@ -19,43 +86,7 @@ nginx_http_template:
     template_file: http/default.conf.j2
     conf_file_name: happyschool.conf
     conf_file_location: /etc/nginx/conf.d/
-    servers:
-      main:
-        listen:
-          listen_localhost:
-            port: 80
-            opts:
-              - default_server
-        server_name: localhost
-        client_max_body_size: 20m
-        web_server:
-          http_demo_conf: false
-          locations:
-            static:
-              location: /static/
-              html_file_location: "{{ happyschool_home }}"
-              add_headers:
-                service_workr_allowed:
-                  name: Service-Worker-Allowed
-                  value: "/"
-            media:
-              location: /media/
-              html_file_location: "{{ happyschool_home }}"
-            favicon:
-              location: /favicon.ico
-              html_file_location: "{{ happyschool_home }}/static/"
-        reverse_proxy:
-          locations:
-            backend:
-              location: /
-              proxy_pass: http://0.0.0.0:8080
-              proxy_set_header:
-                header_upgrade:
-                  name: Upgrade
-                  value: $http_upgrade
-                header_connection:
-                  name: Connection
-                  value: "Upgrade"
+    servers: "{{ nginx_template_https if use_https else nginx_template_http }}"
 
 supervisor_log_dir: /var/log/happyschool
 supervisor_unix_http_server_password_protect: false

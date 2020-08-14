@@ -1,19 +1,43 @@
 ---
+- name: Generate Diffie-Hellman parameters with the default size (4096 bits)
+  openssl_dhparam:
+    path: /etc/ssl/dhparams.pem
+  when: use_https
+  become: yes
+
+- name: Add nodesjs ppa
+  become: yes
+  shell: "curl -sL https://deb.nodesource.com/setup_lts.x | sudo -E bash -"
+
 - name: Install required packages
   become: yes
   apt:
     name:
-      - python3.7
       - libldap2-dev
       - libsasl2-dev
-      - libssl1.0-dev
-      - python3-pip
+      #- libssl1.0-dev
+      - zlib1g-dev
+      - make
+      - build-essential
+      - libssl-dev
+      - libbz2-dev
+      - libreadline-dev
+      - libsqlite3-dev
+      - wget
+      - llvm
+      - libncurses5-dev
+      - xz-utils
+      - tk-dev
+      - libxml2-dev
+      - libxmlsec1-dev
+      - liblzma-dev
+      - libffi-dev
       - git
       - python3-dateutil
       - ttf-bitstream-vera
       - redis-server
-      - npm
-      - python3.7-dev
+      - nodejs
+      - python3-pip
     state: present
     update_cache: true
 
@@ -21,6 +45,13 @@
     name: geerlingguy.supervisor
     apply:
       become: yes
+
+- name: Include certbot role
+  include_role:
+    name: geerlingguy.certbot
+    apply:
+      become: yes
+  when: install_certbot
 
 - name: Install extension for future db
   shell: "psql -d 'template1' -c \"CREATE EXTENSION IF NOT EXISTS unaccent;\""
@@ -42,8 +73,21 @@
     executable: pip3
     extra_args: --user
 
+- name: Check if pyenv is installed
+  stat:
+    path: "/home/{{ ansible_user }}/.pyenv"
+  register: pyenv_dir
+  
+- name: Install pyenv
+  shell: "curl https://pyenv.run | bash"
+  when: not pyenv_dir.stat.exists
+
+- name: Update pyenv
+  shell: ~/.pyenv/bin/pyenv update
+  when: pyenv_dir.stat.exists
+
 - name: Run a pipenv install
-  command: "~/.local/bin/pipenv install"
+  shell: "PIPENV_YES=1 ~/.local/bin/pipenv install"
   args:
       chdir: "{{ happyschool_home }}"
 
