@@ -15,7 +15,6 @@
     name:
       - libldap2-dev
       - libsasl2-dev
-      #- libssl1.0-dev
       - zlib1g-dev
       - make
       - build-essential
@@ -38,6 +37,7 @@
       - redis-server
       - nodejs
       - python3-pip
+      - libpangocairo-1.0-0
     state: present
     update_cache: true
 
